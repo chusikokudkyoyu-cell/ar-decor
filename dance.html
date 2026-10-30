@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ポコのARダンス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+/* Layout: one centered column; the 3D stage is the hero, the AR button sits on it, short how-to below */
+:root{
+  --sky:#eaf6ee;
+  --surface:#ffffff;
+  --ink:#1e2a22;
+  --muted:#5b6b60;
+  --line:#cfe3d4;
+  --leaf:#3f9a45;
+  --pop:#ff8a3d;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--sky);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7}
+.wrap{max-width:640px;margin:0 auto;padding-block:24px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;gap:18px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,7vw,40px);line-height:1.2;margin:0;text-wrap:balance}
+h1 em{font-style:normal;color:var(--leaf)}
+.lead{margin:0;color:var(--muted)}
+.stage{position:relative}
+model-viewer{width:100%;height:min(62vh,520px);min-height:340px;border-radius:20px;border:1px solid var(--line);
+  background:radial-gradient(ellipse at 50% 85%,#d6eedc 0%,#f6fbf7 60%);--poster-color:transparent}
+.ar-btn{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);appearance:none;border:0;border-radius:999px;
+  background:var(--pop);color:#fff;font:700 18px var(--body);padding:15px 30px;cursor:pointer;
+  box-shadow:0 8px 20px rgba(255,138,61,.35);white-space:nowrap}
+.ar-btn:focus-visible{outline:3px solid var(--leaf);outline-offset:3px}
+.steps{margin:0;padding:16px 18px 16px 2.2em;background:var(--surface);border:1px solid var(--line);border-radius:14px;display:grid;gap:6px}
+.steps li::marker{color:var(--leaf);font-weight:700}
+.status{font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.status strong{color:var(--ink)}
+.qr{display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--muted)}
+.qr #qr svg{width:110px;height:110px;display:block}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>机の上で、<em>ポコ</em>が踊りだす。</h1>
+  <p class="lead">オレンジのボタンを押してカメラを机に向けると、身長25cmほどのポコが現れてダンスを始めます。</p>
+
+  <div class="stage">
+    <model-viewer id="mv" src="dance.glb" ios-src="dance.usdz" alt="踊るキャラクター、ポコ"
+      autoplay animation-name="Dance" camera-controls touch-action="pan-y"
+      ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor"
+      shadow-intensity="1" shadow-softness="0.8" exposure="1.05" environment-image="neutral"
+      camera-orbit="15deg 78deg auto" field-of-view="28deg">
+      <button slot="ar-button" class="ar-btn">机の上で踊らせる</button>
+    </model-viewer>
+  </div>
+
+  <div class="status" id="status"><strong>3Dプレビューを表示しています</strong>　スマホで開くと、オレンジのボタンからARで見られます。</div>
+
+  <ol class="steps">
+    <li>「机の上で踊らせる」を押す（iPhoneでは画面上部が「AR」になっていることを確認）</li>
+    <li>机にカメラを向けて、スマホをゆっくり左右に動かす</li>
+    <li>机の面が認識されるとポコが現れて踊ります。指でつまむと大きさ、ドラッグで位置を変えられます</li>
+  </ol>
+
+  <div class="qr" id="qrBox" hidden>
+    <div id="qr"></div>
+    <div><strong style="color:var(--ink)">スマホで開く</strong><br>カメラアプリでこのQRコードを読み取ってください。</div>
+  </div>
+</div>
+<script>
+const mv = document.getElementById("mv"), st = document.getElementById("status");
+mv.addEventListener("load", () => {
+  if (mv.canActivateAR) st.innerHTML = "<strong>ARで見られます</strong>　オレンジのボタンを押してください。";
+});
+mv.addEventListener("error", () => {
+  st.innerHTML = "<strong>3Dデータを読み込めませんでした</strong>　dance.glb と dance.usdz が、このページと同じ場所にアップロードされているか確認してください。";
+});
+mv.addEventListener("ar-status", e => {
+  if (e.detail.status === "failed") st.innerHTML = "<strong>ARを開始できませんでした</strong>　明るい場所で、物が少し置かれた机にカメラを向け直してください。";
+});
+if (location.protocol === "https:" && window.qrcode && !/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+  const qr = qrcode(0, "M"); qr.addData(location.href); qr.make();
+  document.getElementById("qr").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+  document.getElementById("qrBox").hidden = false;
+}
+</script>
+</body>
+</html>
